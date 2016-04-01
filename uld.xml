@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Samsung Unified Linux Driver</short>
+  <description>Samsung Unified Linux Driver for Samsung printers and scanners.</description>
+  <port protocol="udp" port="22161"/>
+</service>
+

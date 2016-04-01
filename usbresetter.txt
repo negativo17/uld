@@ -1,0 +1,10 @@
+usbresetter
+
+The command takes two arguments:
+
+- USB vendor id (VID)
+- USB product id (PID)
+
+Both are listed in oem.conf. Example:
+
+ # usbresetter 04e8 3421
