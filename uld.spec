@@ -1,8 +1,12 @@
-%global         debug_package %{nil}
+# Binary package, no debuginfo should be generated
+%global debug_package %{nil}
+
+# If firewalld macro is not defined, define it here:
+%{!?firewalld_reload:%global firewalld_reload test -f /usr/bin/firewall-cmd && firewall-cmd --reload --quiet || :}
 
 Name:           uld
 Version:        1.00.37
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Samsung Printing & Scan Driver
 License:        End-user license agreement for Samsung Electronics software product
 URL:            http://www.samsung.com/us/support/owners/product/SL-C460W/XAA
@@ -20,6 +24,16 @@ Requires:       firewalld
 Requires:       gettext
 Requires:       sane-backends%{?_isa}
 
+# Required for the firewall rules
+# http://fedoraproject.org/wiki/PackagingDrafts/ScriptletSnippets/Firewalld
+%if 0%{?rhel}
+Requires:       firewalld
+Requires(post): firewalld
+%else
+Requires:       firewalld-filesystem
+Requires(post): firewalld-filesystem
+%endif
+
 %description
 Samsung Printing & Scan Driver.
 
@@ -29,7 +43,8 @@ cp %{SOURCE2} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}/
-mkdir -p %{buildroot}%{_datadir}/cups/model/uld/
+mkdir -p %{buildroot}%{_datadir}/cups/model/uld/cms/
+mkdir -p %{buildroot}%{_datadir}/locale/
 mkdir -p %{buildroot}%{_libdir}/sane/
 mkdir -p %{buildroot}%{_prefix}/lib/firewalld/services/
 mkdir -p %{buildroot}%{_prefix}/lib/cups/backend/
@@ -56,18 +71,19 @@ install -p -m 755 i386/rastertospl %{buildroot}%{_prefix}/lib/cups/filter/
 install -p -m 755 i386/libscmssc.so %{buildroot}%{_libdir}/
 %endif
 
+ldconfig -vn %{buildroot}%{_libdir}/sane/
+
 # Remove RPATH for libscmssc.so
 chrpath -d %{buildroot}%{_prefix}/lib/cups/filter/rastertospl
 
-ln -sf libsane-smfp.so.1.0.1 %{buildroot}%{_libdir}/sane/libsane-smfp.so.1
-ln -sf libsane-smfp.so.1.0.1 %{buildroot}%{_libdir}/sane/libsane-smfp.so
-
+# Configuration
 install -p -m 644 noarch/etc/smfp.conf %{buildroot}%{_sysconfdir}/sane.d/
 echo "smfp" > %{buildroot}%{_sysconfdir}/sane.d/dll.d/smfp
 
 # CUPS PPDs
 install -p -m 644 noarch/share/ppd/*.ppd %{buildroot}%{_datadir}/cups/model/uld/
-gzip -9 %{buildroot}%{_datadir}/cups/model/uld/*
+install -p -m 644 noarch/share/ppd/cms/*.cts %{buildroot}%{_datadir}/cups/model/uld/cms/
+gzip -9 %{buildroot}%{_datadir}/cups/model/uld/*.ppd
 
 # Firewalld rules
 install -D -m 644 -p %{SOURCE1} \
@@ -79,12 +95,19 @@ while read line; do
     eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp.rules
 done < noarch/etc/smfp.rules.in
 
-%post -p /sbin/ldconfig
+# Locales
+cp -frv noarch/share/locale/* %{buildroot}%{_datadir}/locale/
+find %{buildroot}%{_datadir}/locale -name install.mo -delete
+
+%find_lang sane-smfp
+
+%post
+/sbin/ldconfig
+%firewalld_reload
 
 %postun -p /sbin/ldconfig
 
-%files
-%{!?_licensedir:%global license %%doc}
+%files -f sane-smfp.lang
 %license noarch/license/eula.txt
 %doc noarch/oem.conf usbresetter.txt
 %config %{_sysconfdir}/sane.d/smfp.conf
@@ -100,6 +123,12 @@ done < noarch/etc/smfp.rules.in
 %{_udevrulesdir}/64-smfp.rules
 
 %changelog
+* Fri Apr 14 2017 Simone Caronni <negativo17@gmail.com> - 1.00.37-2
+- Enable firewalld macros.
+- Install localization.
+- Use ldconfig for installing libraries.
+- Install missing cts files.
+
 * Fri Apr 01 2016 Simone Caronni <negativo17@gmail.com> - 1.00.37-1
 - Update to 1.00.37.
 
