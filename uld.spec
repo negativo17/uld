@@ -6,7 +6,7 @@
 
 Name:           uld
 Version:        1.00.37
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Samsung Printing & Scan Driver
 License:        End-user license agreement for Samsung Electronics software product
 URL:            http://www.samsung.com/us/support/owners/product/SL-C460W/XAA
@@ -51,6 +51,11 @@ mkdir -p %{buildroot}%{_prefix}/lib/cups/backend/
 mkdir -p %{buildroot}%{_prefix}/lib/cups/filter/
 mkdir -p %{buildroot}%{_sysconfdir}/sane.d/dll.d/
 mkdir -p %{buildroot}%{_udevrulesdir}/
+
+# Unfortunately this is hardcoded:
+# $ strings x86_64/libsane-smfp.so.1.0.1 | grep oem.conf
+# /opt/%s/scanner/share/oem.conf
+install -p -m 644 -D noarch/oem.conf %{buildroot}/opt/samsung/scanner/share/oem.conf
 
 # Native components (SANE driver, CUPS driver)
 %ifarch x86_64
@@ -109,10 +114,9 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 
 %files -f sane-smfp.lang
 %license noarch/license/eula.txt
-%doc noarch/oem.conf usbresetter.txt
+%doc usbresetter.txt
 %config %{_sysconfdir}/sane.d/smfp.conf
 %config %{_sysconfdir}/sane.d/dll.d/smfp
-# usbresetter takes two arguments: USB vendor id (VID) and USB product id (PID)
 %{_bindir}/usbresetter
 %{_datadir}/cups/model/uld
 %{_libdir}/libscmssc.so
@@ -121,8 +125,13 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %{_prefix}/lib/cups/filter/*
 %{_prefix}/lib/firewalld/services/%{name}.xml
 %{_udevrulesdir}/64-smfp.rules
+/opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Fri Jan 19 2018 Simone Caronni <negativo17@gmail.com> - 1.00.37-3
+- Unfortunately libsane-smfp hardcodes the path of a configuration file in
+  /opt/samsung/scanner/share (thanks Piotr Szyszkowski).
+
 * Fri Apr 14 2017 Simone Caronni <negativo17@gmail.com> - 1.00.37-2
 - Enable firewalld macros.
 - Install localization.

@@ -5,6 +5,6 @@ The command takes two arguments:
 - USB vendor id (VID)
 - USB product id (PID)
 
-Both are listed in oem.conf. Example:
+Both are listed in /opt/samsung/scanner/share/oem.conf. Example:
 
- # usbresetter 04e8 3421
+# usbresetter 04e8 3421
