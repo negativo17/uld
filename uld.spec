@@ -5,14 +5,14 @@
 %{!?firewalld_reload:%global firewalld_reload test -f /usr/bin/firewall-cmd && firewall-cmd --reload --quiet || :}
 
 Name:           uld
-Version:        1.00.37
-Release:        3%{?dist}
+Version:        1.00.39
+Release:        1%{?dist}
 Summary:        Samsung Printing & Scan Driver
 License:        End-user license agreement for Samsung Electronics software product
-URL:            http://www.samsung.com/us/support/owners/product/SL-C460W/XAA
+URL:            https://support.hp.com/gb-en/products/printers/samsung-printers
 ExclusiveArch:  %{ix86} x86_64
 
-Source0:        http://downloadcenter.samsung.com/content/DR/201512/20151210091120064/uld_v1.00.37_00.99.tar.gz
+Source0:        https://ftp.hp.com/pub/softlib/software13/printers/SS/SL-M4580FX/uld_V1.00.39_01.17.tar.gz
 Source1:        %{name}.xml
 Source2:        usbresetter.txt
 
@@ -35,7 +35,7 @@ Requires(post): firewalld-filesystem
 %endif
 
 %description
-Samsung Printing & Scan Driver.
+Samsung Linux Print and Scan Driver.
 
 %prep
 %setup -qn %{name}
@@ -107,10 +107,10 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %find_lang sane-smfp
 
 %post
-/sbin/ldconfig
+%?ldconfig
 %firewalld_reload
 
-%postun -p /sbin/ldconfig
+%ldconfig_postun
 
 %files -f sane-smfp.lang
 %license noarch/license/eula.txt
@@ -128,6 +128,11 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 /opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Sun Feb 24 2019 Simone Caronni <negativo17@gmail.com> - 1.00.39-1
+- Update to V1.00.39_01.17.
+- Update SPEC file for Samsung/HP switch.
+- Update for packaging guidelines.
+
 * Fri Jan 19 2018 Simone Caronni <negativo17@gmail.com> - 1.00.37-3
 - Unfortunately libsane-smfp hardcodes the path of a configuration file in
   /opt/samsung/scanner/share (thanks Piotr Szyszkowski).
