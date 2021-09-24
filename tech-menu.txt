@@ -1,0 +1,29 @@
+The "Tech Menu" allows you to clear counters, perform tests and some other
+things that the normal user should not be able to access.
+
+To enter the Tech Menu, press *very quickly* in sequence the following buttons:
+
+- Menu (up)
+- Back (down)
+- Left
+- Right
+- Ok (center)
+- Stop/Clear
+- Menu (up)
+
+To clear counters (imaging unit, paper roller, scanner, transfer belt, etc.):
+
+- Data setup
+- Clear count
+- Enter code 1934 (left/right to increase value, ok and back to change digit)
+
+If your printer has a numerical keypad, enter the following to access the Tech
+Menu:
+
+- Menu
+- #
+- 1
+- 9
+- 3
+- 4
+- Menu

@@ -6,7 +6,7 @@
 
 Name:           uld
 Version:        1.00.39
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Samsung Printing & Scan Driver
 License:        End-user license agreement for Samsung Electronics software product
 URL:            https://support.hp.com/gb-en/products/printers/samsung-printers
@@ -15,6 +15,7 @@ ExclusiveArch:  %{ix86} x86_64
 Source0:        https://ftp.hp.com/pub/softlib/software13/printers/SS/SL-M4580FX/uld_V1.00.39_01.17.tar.gz
 Source1:        %{name}.xml
 Source2:        usbresetter.txt
+Source3:        tech-menu.txt
 
 BuildRequires:  chrpath
 # Required for defining _udevrulesdir
@@ -23,16 +24,6 @@ Requires:       cups-filesystem
 Requires:       firewalld
 Requires:       gettext
 Requires:       sane-backends%{?_isa}
-
-# Required for the firewall rules
-# http://fedoraproject.org/wiki/PackagingDrafts/ScriptletSnippets/Firewalld
-%if 0%{?rhel}
-Requires:       firewalld
-Requires(post): firewalld
-%else
-Requires:       firewalld-filesystem
-Requires(post): firewalld-filesystem
-%endif
 
 %description
 Samsung Linux Print and Scan Driver.
@@ -128,6 +119,10 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 /opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Fri Sep 24 2021 Simone Caronni <negativo17@gmail.com> - 1.00.39-2
+- Simplify SPEC file.
+- Add document to access the tech menu.
+
 * Sun Feb 24 2019 Simone Caronni <negativo17@gmail.com> - 1.00.39-1
 - Update to V1.00.39_01.17.
 - Update SPEC file for Samsung/HP switch.
