@@ -31,12 +31,13 @@ HP and Samsung Unified Linux Driver (ULD) for printers and multifunction
 printers (printer and scanner combined).
 
 %prep
-%setup -qn %{name}
+%autosetup -n %{name}
 
 # Additional Samsung printer drivers from old archive
 tar -xzf %{SOURCE1} \
     --strip-components=1 uld/noarch/share uld/noarch/oem.conf \
     --transform s/oem.conf/oem.conf.samsung/
+%_fixperms .
 
 # Additional documents
 cp %{SOURCE3} %{SOURCE4} .
