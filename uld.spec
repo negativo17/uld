@@ -5,17 +5,18 @@
 %{!?firewalld_reload:%global firewalld_reload test -f /usr/bin/firewall-cmd && firewall-cmd --reload --quiet || :}
 
 Name:           uld
-Version:        1.00.39
-Release:        2%{?dist}
-Summary:        Samsung Printing & Scan Driver
-License:        End-user license agreement for Samsung Electronics software product
-URL:            https://support.hp.com/gb-en/products/printers/samsung-printers
-ExclusiveArch:  %{ix86} x86_64
+Version:        1.00.39.12
+Release:        1%{?dist}
+Summary:        Samsung/HP Printing & Scan Driver
+License:        Proprietary
+URL:            https://support.hp.com/us-en/drivers
+ExclusiveArch:  aarch64 %{ix86} x86_64
 
-Source0:        https://ftp.hp.com/pub/softlib/software13/printers/SS/SL-M4580FX/uld_V1.00.39_01.17.tar.gz
-Source1:        %{name}.xml
-Source2:        usbresetter.txt
-Source3:        tech-menu.txt
+Source0:        https://ftp.hp.com/pub/softlib/software13/printers/MFP170/uld-hp_V1.00.39.12_00.15.tar.gz
+Source1:        https://ftp.hp.com/pub/softlib/software13/printers/SS/SL-M4580FX/uld_V1.00.39_01.17.tar.gz
+Source2:        %{name}.xml
+Source3:        usbresetter.txt
+Source4:        tech-menu.txt
 
 BuildRequires:  chrpath
 # Required for defining _udevrulesdir
@@ -26,11 +27,19 @@ Requires:       gettext
 Requires:       sane-backends%{?_isa}
 
 %description
-Samsung Linux Print and Scan Driver.
+HP and Samsung Unified Linux Driver (ULD) for printers and multifunction
+printers (printer and scanner combined).
 
 %prep
 %setup -qn %{name}
-cp %{SOURCE2} .
+
+# Additional Samsung printer drivers from old archive
+tar -xzf %{SOURCE1} \
+    --strip-components=1 uld/noarch/share uld/noarch/oem.conf \
+    --transform s/oem.conf/oem.conf.samsung/
+
+# Additional documents
+cp %{SOURCE3} %{SOURCE4} .
 
 %install
 mkdir -p %{buildroot}%{_bindir}/
@@ -49,23 +58,12 @@ mkdir -p %{buildroot}%{_udevrulesdir}/
 install -p -m 644 -D noarch/oem.conf %{buildroot}/opt/samsung/scanner/share/oem.conf
 
 # Native components (SANE driver, CUPS driver)
-%ifarch x86_64
-install -p -m 755 x86_64/usbresetter %{buildroot}%{_bindir}/
-install -p -m 755 x86_64/libsane-smfp.so.1.0.1 %{buildroot}%{_libdir}/sane/
-install -p -m 755 x86_64/smfpnetdiscovery %{buildroot}%{_prefix}/lib/cups/backend/
-install -p -m 755 x86_64/pstosecps %{buildroot}%{_prefix}/lib/cups/filter/
-install -p -m 755 x86_64/rastertospl %{buildroot}%{_prefix}/lib/cups/filter/
-install -p -m 755 x86_64/libscmssc.so %{buildroot}%{_libdir}/
-%endif
-
-%ifarch %{ix86}
-install -p -m 755 i386/usbresetter %{buildroot}%{_bindir}/
-install -p -m 755 i386/libsane-smfp.so.1.0.1 %{buildroot}%{_libdir}/sane/
-install -p -m 755 i386/smfpnetdiscovery %{buildroot}%{_prefix}/lib/cups/backend/
-install -p -m 755 i386/pstosecps %{buildroot}%{_prefix}/lib/cups/filter/
-install -p -m 755 i386/rastertospl %{buildroot}%{_prefix}/lib/cups/filter/
-install -p -m 755 i386/libscmssc.so %{buildroot}%{_libdir}/
-%endif
+install -p -m 755 %{_arch}/usbresetter %{buildroot}%{_bindir}/
+install -p -m 755 %{_arch}/libsane-smfp.so.1.0.1 %{buildroot}%{_libdir}/sane/
+install -p -m 755 %{_arch}/smfpnetdiscovery %{buildroot}%{_prefix}/lib/cups/backend/
+install -p -m 755 %{_arch}/pstosecps %{buildroot}%{_prefix}/lib/cups/filter/
+install -p -m 755 %{_arch}/rastertospl %{buildroot}%{_prefix}/lib/cups/filter/
+install -p -m 755 %{_arch}/libscmssc.so %{buildroot}%{_libdir}/
 
 ldconfig -vn %{buildroot}%{_libdir}/sane/
 
@@ -82,13 +80,18 @@ install -p -m 644 noarch/share/ppd/cms/*.cts %{buildroot}%{_datadir}/cups/model/
 gzip -9 %{buildroot}%{_datadir}/cups/model/uld/*.ppd
 
 # Firewalld rules
-install -D -m 644 -p %{SOURCE1} \
+install -D -m 644 -p %{SOURCE2} \
     %{buildroot}%{_prefix}/lib/firewalld/services/%{name}.xml
 
 # UDev rules - look for function fill_full_template() in scanner-script.pkg
 source noarch/oem.conf
 while read line; do
-    eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp.rules
+    eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp-hp.rules
+done < noarch/etc/smfp.rules.in
+
+source noarch/oem.conf.samsung
+while read line; do
+    eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp-samsung.rules
 done < noarch/etc/smfp.rules.in
 
 # Locales
@@ -105,20 +108,31 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 
 %files -f sane-smfp.lang
 %license noarch/license/eula.txt
-%doc usbresetter.txt
+%doc usbresetter.txt tech-menu.txt
 %config %{_sysconfdir}/sane.d/smfp.conf
 %config %{_sysconfdir}/sane.d/dll.d/smfp
 %{_bindir}/usbresetter
 %{_datadir}/cups/model/uld
 %{_libdir}/libscmssc.so
-%{_libdir}/sane/libsane-smfp.so*
-%{_prefix}/lib/cups/backend/*
-%{_prefix}/lib/cups/filter/*
+%{_libdir}/sane/libsane-smfp.so.1
+%{_libdir}/sane/libsane-smfp.so.1.0.1
+%{_prefix}/lib/cups/backend/smfpnetdiscovery
+%{_prefix}/lib/cups/filter/pstosecps
+%{_prefix}/lib/cups/filter/rastertospl
 %{_prefix}/lib/firewalld/services/%{name}.xml
-%{_udevrulesdir}/64-smfp.rules
+%{_udevrulesdir}/64-smfp-hp.rules
+%{_udevrulesdir}/64-smfp-samsung.rules
 /opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Sat Dec 10 2022 Simone Caronni <negativo17@gmail.com> - 1.00.39.12-1
+- Update to 1.00.39.12, using HP driver package and combining in Samsung
+  drivers (#1).
+- Build also for aarch64.
+- Add tech menu document for real (#2).
+- Avoid wildcards in file list.
+- Update SPEC file for new HP information.
+
 * Fri Sep 24 2021 Simone Caronni <negativo17@gmail.com> - 1.00.39-2
 - Simplify SPEC file.
 - Add document to access the tech menu.
