@@ -6,7 +6,7 @@
 
 Name:           uld
 Version:        1.00.39.12
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Samsung/HP Printing & Scan Driver
 License:        Proprietary
 URL:            https://support.hp.com/us-en/drivers
@@ -32,6 +32,7 @@ printers (printer and scanner combined).
 
 %prep
 %autosetup -n %{name}
+mv noarch/oem.conf noarch/oem.conf.hp
 
 # Additional Samsung printer drivers from old archive
 tar -xzf %{SOURCE1} \
@@ -52,11 +53,6 @@ mkdir -p %{buildroot}%{_prefix}/lib/cups/backend/
 mkdir -p %{buildroot}%{_prefix}/lib/cups/filter/
 mkdir -p %{buildroot}%{_sysconfdir}/sane.d/dll.d/
 mkdir -p %{buildroot}%{_udevrulesdir}/
-
-# Unfortunately this is hardcoded:
-# $ strings x86_64/libsane-smfp.so.1.0.1 | grep oem.conf
-# /opt/%s/scanner/share/oem.conf
-install -p -m 644 -D noarch/oem.conf %{buildroot}/opt/samsung/scanner/share/oem.conf
 
 # Native components (SANE driver, CUPS driver)
 install -p -m 755 %{_arch}/usbresetter %{buildroot}%{_bindir}/
@@ -84,16 +80,24 @@ gzip -9 %{buildroot}%{_datadir}/cups/model/uld/*.ppd
 install -D -m 644 -p %{SOURCE2} \
     %{buildroot}%{_prefix}/lib/firewalld/services/%{name}.xml
 
-# UDev rules - look for function fill_full_template() in scanner-script.pkg
-source noarch/oem.conf
-while read line; do
-    eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp-hp.rules
-done < noarch/etc/smfp.rules.in
+# Configuration file and udev rules based on vendor:
+# $ strings x86_64/libsane-smfp.so.1.0.1 | grep -E "oem.conf|^vendor:"
+# vendor:          %s
+# /opt/%s/scanner/share/oem.conf
+# vendor:         %s
+#
+# Look for function fill_full_template() in scanner-script.pkg for udev rules.
 
-source noarch/oem.conf.samsung
-while read line; do
-    eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp-samsung.rules
-done < noarch/etc/smfp.rules.in
+for vendor in samsung hp; do
+
+    install -p -m 644 -D noarch/oem.conf.${vendor} %{buildroot}/opt/${vendor}/scanner/share/oem.conf
+
+    source noarch/oem.conf.${vendor}
+    while read line; do
+        eval echo \"$line\" >> %{buildroot}%{_udevrulesdir}/64-smfp-${vendor}.rules
+    done < noarch/etc/smfp.rules.in
+
+done
 
 # Locales
 cp -frv noarch/share/locale/* %{buildroot}%{_datadir}/locale/
@@ -123,9 +127,15 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %{_prefix}/lib/firewalld/services/%{name}.xml
 %{_udevrulesdir}/64-smfp-hp.rules
 %{_udevrulesdir}/64-smfp-samsung.rules
+/opt/hp/scanner/share/oem.conf
 /opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Tue Dec 13 2022 Simone Caronni <negativo17@gmail.com> - 1.00.39.12-2
+- Add both Samsung and HP oem.conf files, binary looks for a folder with the
+  vendor name.
+- Update description in the firewalld service.
+
 * Sat Dec 10 2022 Simone Caronni <negativo17@gmail.com> - 1.00.39.12-1
 - Update to 1.00.39.12, using HP driver package and combining in Samsung
   drivers (#1).
