@@ -6,7 +6,7 @@
 
 Name:           uld
 Version:        1.00.39.12
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Samsung/HP Printing & Scan Driver
 License:        Proprietary
 URL:            https://support.hp.com/us-en/drivers
@@ -47,6 +47,8 @@ cp %{SOURCE3} %{SOURCE4} .
 mkdir -p %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}%{_datadir}/cups/model/uld/cms/
 mkdir -p %{buildroot}%{_datadir}/locale/
+mkdir -p %{buildroot}%{_datadir}/uld/oem/hp/
+mkdir -p %{buildroot}%{_datadir}/uld/oem/samsung/
 mkdir -p %{buildroot}%{_libdir}/sane/
 mkdir -p %{buildroot}%{_prefix}/lib/firewalld/services/
 mkdir -p %{buildroot}%{_prefix}/lib/cups/backend/
@@ -88,9 +90,13 @@ install -D -m 644 -p %{SOURCE2} \
 #
 # Look for function fill_full_template() in scanner-script.pkg for udev rules.
 
+# rewrite path from /opt to /usr/share
+sed -i 's$/opt/%s/scanner/share/oem.conf$/usr/share/uld/oem/%s/oem.conf$' \
+    %{buildroot}%{_libdir}/sane/libsane-smfp.so.1.0.1 
+
 for vendor in samsung hp; do
 
-    install -p -m 644 -D noarch/oem.conf.${vendor} %{buildroot}/opt/${vendor}/scanner/share/oem.conf
+    install -p -m 644 -D noarch/oem.conf.${vendor} %{buildroot}%{_datadir}/uld/oem/${vendor}/oem.conf
 
     source noarch/oem.conf.${vendor}
     while read line; do
@@ -118,6 +124,8 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %config %{_sysconfdir}/sane.d/dll.d/smfp
 %{_bindir}/usbresetter
 %{_datadir}/cups/model/uld
+%{_datadir}/uld/oem/hp/oem.conf
+%{_datadir}/uld/oem/samsung/oem.conf
 %{_libdir}/libscmssc.so
 %{_libdir}/sane/libsane-smfp.so.1
 %{_libdir}/sane/libsane-smfp.so.1.0.1
@@ -127,10 +135,11 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %{_prefix}/lib/firewalld/services/%{name}.xml
 %{_udevrulesdir}/64-smfp-hp.rules
 %{_udevrulesdir}/64-smfp-samsung.rules
-/opt/hp/scanner/share/oem.conf
-/opt/samsung/scanner/share/oem.conf
 
 %changelog
+* Sun Mar 16 2025 Florian Richter <florian@richter-es.de> - 1.00.39.12-3
+- Rewrite path for oem.conf files from /opt to /usr/share in binary
+
 * Tue Dec 13 2022 Simone Caronni <negativo17@gmail.com> - 1.00.39.12-2
 - Add both Samsung and HP oem.conf files, binary looks for a folder with the
   vendor name.
