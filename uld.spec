@@ -124,8 +124,7 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %config %{_sysconfdir}/sane.d/dll.d/smfp
 %{_bindir}/usbresetter
 %{_datadir}/cups/model/uld
-%{_datadir}/uld/oem/hp/oem.conf
-%{_datadir}/uld/oem/samsung/oem.conf
+%{_datadir}/uld
 %{_libdir}/libscmssc.so
 %{_libdir}/sane/libsane-smfp.so.1
 %{_libdir}/sane/libsane-smfp.so.1.0.1
