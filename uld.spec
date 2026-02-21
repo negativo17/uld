@@ -6,8 +6,8 @@
 
 Name:           uld
 Version:        1.00.39.12
-Release:        3%{?dist}
-Summary:        Samsung/HP Printing & Scan Driver
+Release:        4%{?dist}
+Summary:        Samsung/HP/Xerox Printing & Scan Driver
 License:        Proprietary
 URL:            https://support.hp.com/us-en/drivers
 ExclusiveArch:  aarch64 %{ix86} x86_64
@@ -17,6 +17,7 @@ Source1:        https://ftp.hp.com/pub/softlib/software13/printers/SS/SL-M4580FX
 Source2:        %{name}.xml
 Source3:        usbresetter.txt
 Source4:        tech-menu.txt
+Source5:        https://download.support.xerox.com/pub/drivers/3020/drivers/linux/en_GB/Xerox_Phaser_3020_Linux-Driver.tar.gz
 
 BuildRequires:  chrpath
 # Required for defining _udevrulesdir
@@ -27,7 +28,7 @@ Requires:       gettext
 Requires:       sane-backends%{?_isa}
 
 %description
-HP and Samsung Unified Linux Driver (ULD) for printers and multifunction
+HP, Samsung and Xerox Unified Linux Driver (ULD) for printers and multifunction
 printers (printer and scanner combined).
 
 %prep
@@ -38,6 +39,12 @@ mv noarch/oem.conf noarch/oem.conf.hp
 tar -xzf %{SOURCE1} \
     --strip-components=1 uld/noarch/share uld/noarch/oem.conf \
     --transform s/oem.conf/oem.conf.samsung/
+# Additional Xerox printer drivers
+tar -xzf %{SOURCE5} \
+    --strip-components=1 uld/noarch/share uld/noarch/oem.conf \
+    --transform s/oem.conf/oem.conf.xerox/
+# French PPDs contain the same info, only UI strings are localized
+rm noarch/share/ppd/Xerox_*_fr.ppd
 %_fixperms .
 
 # Additional documents
@@ -94,7 +101,7 @@ install -D -m 644 -p %{SOURCE2} \
 sed -i 's$/opt/%s/scanner/share/oem.conf$/usr/share/uld/oem/%s/oem.conf$' \
     %{buildroot}%{_libdir}/sane/libsane-smfp.so.1.0.1 
 
-for vendor in samsung hp; do
+for vendor in samsung hp xerox; do
 
     install -p -m 644 -D noarch/oem.conf.${vendor} %{buildroot}%{_datadir}/uld/oem/${vendor}/oem.conf
 
@@ -134,8 +141,12 @@ find %{buildroot}%{_datadir}/locale -name install.mo -delete
 %{_prefix}/lib/firewalld/services/%{name}.xml
 %{_udevrulesdir}/64-smfp-hp.rules
 %{_udevrulesdir}/64-smfp-samsung.rules
+%{_udevrulesdir}/64-smfp-xerox.rules
 
 %changelog
+* Sat Feb 21 2026 Nikita Leshenko <nikita@leshenko.net> - 1.00.39.12-4
+- Add Xerox PPDs
+
 * Sun Mar 16 2025 Florian Richter <florian@richter-es.de> - 1.00.39.12-3
 - Rewrite path for oem.conf files from /opt to /usr/share in binary
 
